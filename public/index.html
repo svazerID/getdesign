@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>GetDesign — Design System Scanner</title>
+<meta name="description" content="Extract design systems (colors, fonts, variables, spacing) from any website and generate docs with AI.">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="toastWrap" class="toast-wrap"></div>
+
+  <!-- ══ NAV ══ -->
+  <nav class="topbar" id="mainNav">
+    <div class="topbar-left">
+      <i class="fa-solid fa-cube logo-icon"></i>
+      <span class="logo-text">Get<span class="accent">Design</span></span>
+    </div>
+    <div class="topbar-right">
+      <span class="status-pill" id="groqStatus">
+        <i class="fa-solid fa-circle dot"></i> checking…
+      </span>
+    </div>
+  </nav>
+
+  <!-- ══ MAIN ══ -->
+  <main class="main">
+
+    <!-- HERO -->
+    <header class="header">
+      <div class="header-badge"><span class="live-dot"></span> Scanner Online</div>
+      <h1 class="header-title">GetDesign<br><span class="hl">Design System Scanner</span></h1>
+      <p class="header-desc">Ekstrak design system dari website mana pun — warna, font, custom properties, spacing — lalu generate dokumentasi dengan AI.</p>
+      <div class="header-tags">
+        <span class="tag"><i class="fa-solid fa-palette"></i> Colors</span>
+        <span class="tag"><i class="fa-solid fa-font"></i> Typography</span>
+        <span class="tag"><i class="fa-solid fa-code"></i> Variables</span>
+        <span class="tag"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Docs</span>
+      </div>
+    </header>
+
+    <!-- TERMINAL INPUT CARD -->
+    <div class="deploy-card" id="inputCard">
+      <div class="term-bar">
+        <div class="term-dots"><span></span><span></span><span></span></div>
+        <span class="term-title">scan --site</span>
+      </div>
+      <div class="deploy-card-inner">
+        <div class="deploy-icon"><i class="fa-solid fa-link"></i></div>
+        <div class="deploy-body">
+          <label class="field-label">Target URL</label>
+          <div class="input-group">
+            <span class="input-prefix"><i class="fa-solid fa-globe"></i></span>
+            <input type="url" id="urlInput" placeholder="https://stripe.com" spellcheck="false" autocomplete="off">
+          </div>
+          <button class="btn-primary btn-block btn-lg" id="scanBtn">
+            <i class="fa-solid fa-bolt"></i> Scan Site
+          </button>
+          <p class="hint">Tempel URL publik. CSS, custom properties, font, dan warna akan diekstrak otomatis.</p>
+          <div class="presets" style="margin-top:10px;">
+            <button class="preset" data-url="https://stripe.com">stripe.com</button>
+            <button class="preset" data-url="https://linear.app">linear.app</button>
+            <button class="preset" data-url="https://github.com">github.com</button>
+            <button class="preset" data-url="https://vercel.com">vercel.com</button>
+            <button class="preset" data-url="https://tailwindcss.com">tailwindcss</button>
+            <button class="preset" data-url="https://notion.so">notion.so</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI GENERATION CARD -->
+    <div class="gen-card" id="genCard">
+      <div class="gen-card-head">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span>AI Generation</span>
+      </div>
+      <p class="hint" style="margin:0 0 10px;">Setelah scan, buat dokumentasi otomatis dari data yang diekstrak.</p>
+      <div class="gen-buttons">
+        <button class="btn-secondary" id="genDesign" disabled>
+          <i class="fa-solid fa-file-code"></i> Generate DESIGN.md
+        </button>
+        <button class="btn-secondary" id="genReadme" disabled>
+          <i class="fa-solid fa-book"></i> Generate README.md
+        </button>
+        <button class="btn-secondary" id="genAudit" disabled>
+          <i class="fa-solid fa-magnifying-glass"></i> Audit CSS
+        </button>
+      </div>
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div class="empty hidden" id="emptyState">
+      <div class="empty-icon"><i class="fa-solid fa-cube"></i></div>
+      <h3 class="empty-title">No scan yet</h3>
+      <p class="empty-sub">Tempel URL di atas dan tekan Scan untuk mengekstrak design system.</p>
+    </div>
+
+    <!-- LOADING -->
+    <div class="loading-state hidden" id="loadingState">
+      <div class="spinner"></div>
+      <p class="loading-text">Fetching &amp; parsing CSS…</p>
+    </div>
+
+    <!-- RESULTS -->
+    <section class="panel results-panel hidden" id="resultsContent">
+      <div class="results-header">
+        <div class="results-meta">
+          <h2 id="pageTitle">—</h2>
+          <span class="meta-url" id="pageUrl">—</span>
+          <p class="meta-desc" id="pageDesc">—</p>
+        </div>
+        <div class="results-actions">
+          <button class="btn-sm" id="downloadDesign" title="Download DESIGN.md">
+            <i class="fa-solid fa-download"></i> DESIGN.md
+          </button>
+          <button class="btn-sm" id="downloadCSS" title="Download raw CSS">
+            <i class="fa-solid fa-download"></i> audit.css
+          </button>
+        </div>
+      </div>
+
+      <div class="stats-bar">
+        <div class="stat"><span class="stat-val" id="statColors">0</span><span class="stat-label">Colors</span></div>
+        <div class="stat"><span class="stat-val" id="statFonts">0</span><span class="stat-label">Fonts</span></div>
+        <div class="stat"><span class="stat-val" id="statVars">0</span><span class="stat-label">Variables</span></div>
+        <div class="stat"><span class="stat-val" id="statSelectors">0</span><span class="stat-label">Selectors</span></div>
+        <div class="stat"><span class="stat-val" id="statSheets">0</span><span class="stat-label">Stylesheets</span></div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="colors"><i class="fa-solid fa-palette"></i> Colors</button>
+        <button class="tab" data-tab="typography"><i class="fa-solid fa-font"></i> Typography</button>
+        <button class="tab" data-tab="variables"><i class="fa-solid fa-code"></i> Variables</button>
+        <button class="tab" data-tab="spacing"><i class="fa-solid fa-ruler"></i> Spacing</button>
+        <button class="tab" data-tab="rawcss"><i class="fa-solid fa-file-lines"></i> Raw CSS</button>
+      </div>
+
+      <div class="tab-panel active" id="panel-colors">
+        <div class="swatch-grid" id="swatchGrid"></div>
+      </div>
+      <div class="tab-panel" id="panel-typography">
+        <div class="type-list" id="typeList"></div>
+      </div>
+      <div class="tab-panel" id="panel-variables">
+        <div class="var-table-wrap">
+          <table class="var-table" id="varTable">
+            <thead><tr><th>Property</th><th>Value</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="tab-panel" id="panel-spacing">
+        <div class="spacing-list" id="spacingList"></div>
+      </div>
+      <div class="tab-panel" id="panel-rawcss">
+        <pre class="raw-css" id="rawCSS"></pre>
+      </div>
+    </section>
+
+    <!-- AI OUTPUT -->
+    <div class="ai-output hidden" id="aiOutput">
+      <div class="ai-output-header">
+        <div class="ai-output-title">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span id="aiOutputLabel">Generated Document</span>
+        </div>
+        <div class="ai-output-actions">
+          <button class="btn-sm" id="copyAI"><i class="fa-solid fa-copy"></i> Copy</button>
+          <button class="btn-sm" id="downloadAI"><i class="fa-solid fa-download"></i> Download</button>
+          <button class="btn-sm btn-close-ai" id="closeAI"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+      <div class="ai-content" id="aiContent"></div>
+      <div class="ai-loading hidden" id="aiLoading">
+        <div class="spinner"></div>
+        <span>Generating…</span>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
